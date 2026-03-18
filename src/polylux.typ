@@ -11,6 +11,7 @@
   reveal-code,
   later,
   enable-handout-mode,
-  in-subslide
+  in-subslide,
+  template
 )
 #import "toolbox/toolbox.typ"

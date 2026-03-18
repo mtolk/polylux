@@ -1,3 +1,5 @@
+#import "@preview/bullseye:0.1.0": *
+
 #let subslide = counter("subslide")
 #let later-counter = counter("later-counter")
 #let logical-slide = counter("logical-slide")
@@ -260,6 +262,128 @@
   }
 }
 
+#let html-page-reveal(title: "", langfield: "en",css: "",js: "", favicon: (:), meta: (:), body) = {
+  let stylesheets = (
+     :
+  )
+  html.elem(
+    "html",
+    attrs: (lang: langfield),
+    {
+      html.elem(
+        "head",
+        {
+          html.elem("meta", attrs: (charset: "UTF-8"))
+          html.elem("style",css)
+          html.elem(
+            "meta",
+            attrs: (
+              name: "viewport",
+              content: "width=device-width, initial-scale=1",
+            ),
+          )
+          for meta-tag in meta {
+            html.elem("meta", attrs: meta-tag)
+          }
+
+          html.elem("title", title)
+
+          html.elem("link", attrs: (
+            rel: "icon",
+            href: favicon.filename,
+            type: favicon.type,
+          ))
+
+          for stylesheet in stylesheets {
+            html.elem("link", attrs: (
+              rel: "stylesheet",
+              type: "text/css",
+              href: stylesheet,
+            ))
+          }
+        },
+      )
+      html.elem(
+        "main", attrs: ( // should this be a div?
+          class: "reveal"
+        ),
+        html.elem(
+          "article",attrs: ( // should this be a div?
+          class: "slides"
+        ),
+          {
+            body
+          },
+        ),
+      )
+      html.script(js)
+    },
+  )
+}
+
+#let template(title: "",doc) =    context{ if target() == "html" {  
+  let resetcss = read("revealjs5.2.1/reset.css")
+  let revealcss = read("revealjs5.2.1/reveal.css")
+  let fortypstframe = "
+    svg.typst-frame {
+      width: 100% !important;
+      height: 100% !important;
+  }"
+  let js = read("revealjs5.2.1/reveal.js")
+  let customjs = "	Reveal.initialize({
+        controls: false,
+        disableLayout: true,// so we can do layout purely in typst
+				hash: true,
+        
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [  ],
+        progress: false,
+         transition: 'fade', // none/fade/slide/convex/concave/zoom
+         transitionSpeed: 'fast', // default/fast/slow
+			});"
+
+  html-page-reveal(
+  title: title,
+  langfield: "en",
+  css: resetcss + revealcss + fortypstframe,
+  js: js + customjs,
+  favicon: (
+    type: "image/svg",
+    filename: "/assets/images/favicon.svg",
+  ),
+  meta: (
+    (
+      content: "my description",
+      name: "description",
+    ),
+    (
+      content: "typst, presentation,slidedeck, html, impertio",
+      name: "keywords",
+    ),
+    (content: "This could be you", name: "author"),
+    (content: "Demo presentation", property: "og:title"),
+    (content: "website", property: "og:type"),
+  
+    
+  ),
+  doc
+) 
+
+    
+  } else {
+    
+      set page(
+        paper: "presentation-16-9",
+        //flipped: true,
+        margin: 0pt,//
+      )
+      
+      
+      doc
+    
+  }
+}
+
 #let slide(body) = {
   context {
     if logical-slide.get().first() > 0 {
@@ -282,21 +406,55 @@
 
   pdfpc-slide-markers(1)
 
-  body
+  context { if target() == "html" { 
+      html.elem("section",attrs: (class: "slide"),{
+        html.elem("section",attrs: (class: "subslide"),
+          html.frame( block(width: 800pt, height: 450pt, body) )
+        )
 
-  subslide.step()
-  set heading(outlined: false)
+        subslide.step()
+        set heading(outlined: false)
 
-  context {
-    let reps = repetitions.get().first()
-    for curr-subslide in range(2, reps + 1) {
-      later-counter.update(0)
-      pagebreak(weak: true)
+        
+        
+        context {
+          let reps = repetitions.get().first()
+          for curr-subslide in range(2, reps + 1) {
+            later-counter.update(0)
+            //pagebreak(weak: true)
 
-      pdfpc-slide-markers(curr-subslide)
+            //pdfpc-slide-markers(curr-subslide)
 
+            html.elem("section",attrs: (class: "subslide"),
+              html.frame( block(width: 800pt, height: 450pt, body) )
+            )
+            subslide.step()
+          }
+        }
+      }
+      
+      )
+    } else {
       body
+
       subslide.step()
+      set heading(outlined: false)
+
+      context {
+        let reps = repetitions.get().first()
+        for curr-subslide in range(2, reps + 1) {
+          later-counter.update(0)
+          pagebreak(weak: true)
+
+          pdfpc-slide-markers(curr-subslide)
+
+          body
+          subslide.step()
+        }
+      }
     }
   }
+  
+
+  
 }

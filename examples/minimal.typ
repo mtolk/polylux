@@ -1,9 +1,11 @@
 // Get Polylux from the official package repository
-#import "../polylux.typ": *
+#import "../src/polylux.typ": *
 
 // Make the paper dimensions fit for a presentation and the text larger
 #set page(paper: "presentation-16-9")
 #set text(size: 25pt, font: "Lato")
+
+#show: template.with(title: "my minimal presentation")
 
 // Use #slide to create a slide and style it using your favourite Typst functions
 #slide[

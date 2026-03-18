@@ -1,5 +1,8 @@
 #import "../src/polylux.typ": *    
 
+
+
+
 #show link: set text(blue)
 #set text(font: "Andika", size: 20pt)
 #show raw: set text(font: "Fantasque Sans Mono")
@@ -31,8 +34,10 @@
 
 #show heading: set block(below: 2em)
 
+
+
 #let new-section-slide(title) = slide[
-  #set page(footer: none, header: none)
+  //#set page(footer: none, header: none)
   #set align(horizon)
   #set text(size: 1.5em)
   #strong(title)
@@ -40,8 +45,10 @@
   #toolbox.register-section(title)
 ]
 
+#show: template.with(title: "my demo")
+
 #slide[
-  #set page(footer: none, header: none)
+  //#set page(footer: none, header: none)
   #set align(horizon)
   #text(size: 2em, weight: "bold")[
     #toolbox.side-by-side(columns: (auto, 1fr))[
