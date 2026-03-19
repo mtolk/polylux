@@ -48,6 +48,7 @@
 #show: template.with(title: "my demo")
 
 #slide[
+  #toolbox.pdfpc.speaker-note("This is my first slide")
   //#set page(footer: none, header: none)
   #set align(horizon)
   #text(size: 2em, weight: "bold")[

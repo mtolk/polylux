@@ -324,6 +324,7 @@
 #let template(title: "",doc) =    context{ if target() == "html" {  
   let resetcss = read("revealjs5.2.1/reset.css")
   let revealcss = read("revealjs5.2.1/reveal.css")
+  let revealnotesjs = read("revealjs5.2.1/notes.js")
   let fortypstframe = "
     svg.typst-frame {
       width: 100% !important;
@@ -336,7 +337,7 @@
 				hash: true,
         
 				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [  ],
+				plugins: [ RevealNotes ],
         progress: false,
          transition: 'fade', // none/fade/slide/convex/concave/zoom
          transitionSpeed: 'fast', // default/fast/slow
@@ -346,7 +347,7 @@
   title: title,
   langfield: "en",
   css: resetcss + revealcss + fortypstframe,
-  js: js + customjs,
+  js: js + revealnotesjs + customjs,
   favicon: (
     type: "image/svg",
     filename: "/assets/images/favicon.svg",
@@ -384,6 +385,48 @@
   }
 }
 
+#let _extractfrommetadata(m) = {
+  if m.func() == metadata {
+        if m.has("value"){
+          let value = m.at("value")
+          if value.keys().contains("t") and value.at("t") == "Note" and value.keys().contains("v"){
+          return value.at("v")
+        } else {
+          return ""
+        }
+        
+      } else {
+        return ""
+      }
+    } else {
+      return ""
+    }
+}
+
+
+#let extract-speakernote-from-content-block(mycontent) = context {
+  
+  if type(mycontent) == content {
+
+    if mycontent.func() == metadata {
+        return _extractfrommetadata(mycontent)
+    } else {
+      if mycontent.has("children"){
+        return mycontent.children.flatten().map(extract-speakernote-from-content-block).fold("", (acc, x) => acc + x)
+        
+      } else if(mycontent.has("body")){
+          return extract-speakernote-from-content-block( mycontent.at("body"))
+      
+      } else { 
+        return "" // no speakernotes found
+      }
+    }
+  } else {
+    return ""
+  }
+  
+}
+
 #let slide(body) = {
   context {
     if logical-slide.get().first() > 0 {
@@ -407,11 +450,20 @@
   pdfpc-slide-markers(1)
 
   context { if target() == "html" { 
+      // search for #metadata((t: "Note", v: text))  in body. if there is 1 the text is the note
+      let note =  extract-speakernote-from-content-block(body) 
+
+      // in future consider outputting actual html elements instead of just a svg.
+      // implications: it will not look 100% the same as the pdf, but can become more accessable, responsive
+      // if this would be enabled it would require theme authors to provide css styling similar to the paged styling.
       html.elem("section",attrs: (class: "slide"),{
         html.elem("section",attrs: (class: "subslide"),
-          html.frame( block(width: 800pt, height: 450pt, body) )
-        )
-
+                  html.frame( block(width: 800pt, height: 450pt, body) ) +  
+                  html.elem("aside", attrs: (class: "notes"), note )
+                   )
+      
+          
+        
         subslide.step()
         set heading(outlined: false)
 
@@ -426,7 +478,8 @@
             //pdfpc-slide-markers(curr-subslide)
 
             html.elem("section",attrs: (class: "subslide"),
-              html.frame( block(width: 800pt, height: 450pt, body) )
+              html.frame( block(width: 800pt, height: 450pt, body) )+  
+              html.elem("aside", attrs: (class: "notes"), note )
             )
             subslide.step()
           }
@@ -454,7 +507,4 @@
       }
     }
   }
-  
-
-  
 }
