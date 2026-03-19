@@ -427,10 +427,12 @@
   
 }
 
-#let slide(body) = {
-  context {
-    if logical-slide.get().first() > 0 {
-      pagebreak(weak: true)
+#let slide(body) = context { 
+    if target() != "html" {
+    context {
+      if logical-slide.get().first() > 0 {
+        pagebreak(weak: true)
+      }
     }
   }
   logical-slide.step()
@@ -479,7 +481,7 @@
 
             html.elem("section",attrs: (class: "subslide"),
               html.frame( block(width: 800pt, height: 450pt, body) )+  
-              html.elem("aside", attrs: (class: "notes"), note )
+              html.elem("aside", attrs: (class: "notes"), extract-speakernote-from-content-block(body)  )
             )
             subslide.step()
           }
