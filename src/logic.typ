@@ -1,4 +1,5 @@
 #import "@preview/bullseye:0.1.0": *
+#import "@preview/elembic:1.1.1" as e
 
 #let subslide = counter("subslide")
 #let later-counter = counter("later-counter")
@@ -427,7 +428,7 @@
   
 }
 
-#let slide(body) = context { 
+/*#let slide(body) = context { 
     if target() != "html" {
     context {
       if logical-slide.get().first() > 0 {
@@ -509,4 +510,159 @@
       }
     }
   }
+}*/
+
+#let _block-with-header-footer(inset: 0pt,header:none,footer:none,width,height,body) = {
+  block(fill:red,width:width,height:height,
+    grid( 
+      columns: (1fr),
+      rows: (auto,1fr,auto),
+      [#header],
+      grid.cell(inset:inset)[#body],
+      [#footer]
+    )
+  )
 }
+
+#let _add-background-foreground( bg , fg, body) = context {
+  let h = measure(body).height * -1
+  
+  rect(inset:0pt,width: 100%, height: 100%, 
+      [
+          #if type(bg) == content {
+            place(dx:0pt, block(fill:none,inset:0pt,radius:0pt,width:100%,height:100%,bg))
+          }
+          #body
+          #if type(fg) == content {
+            place(dy: h , block(inset:0pt,fill:none,radius:0pt,width:100%,height:100%,fg))
+          }
+          
+        
+    ])
+}
+
+// create a slide using elembic so it is easily stylable
+#let slide = e.element.declare(
+  "elembicslide",
+  doc:"Create a stylable slide",
+  prefix: "@preview/polylux-internal-slide,v0",
+
+  display: it => context { 
+    if target() != "html" {
+    context {
+      if logical-slide.get().first() > 0 {
+        pagebreak(weak: true)
+      }
+    }
+  }
+  logical-slide.step()
+  subslide.update(1)
+  repetitions.update(1)
+  later-counter.update(0)
+
+  // Having this here is a bit unfortunate concerning separation of concerns
+  // but I'm not comfortable with logic depending on pdfpc...
+  let pdfpc-slide-markers(curr-subslide) = context [
+    #metadata((t: "NewSlide")) <pdfpc>
+    #metadata((t: "Idx", v: counter(page).get().first() - 1)) <pdfpc>
+    #metadata((t: "Overlay", v: curr-subslide - 1)) <pdfpc>
+    #metadata((t: "LogicalSlide", v: logical-slide.get().first())) <pdfpc>
+  ]
+
+  pdfpc-slide-markers(1)
+
+  context { if target() == "html" { 
+      // search for #metadata((t: "Note", v: text))  in body. if there is 1 the text is the note
+       
+
+      // in future consider outputting actual html elements instead of just a svg.
+      // implications: it will not look 100% the same as the pdf, but can become more accessable, responsive
+      // if this would be enabled it would require theme authors to provide css styling similar to the paged styling.
+      html.elem("section",attrs: (class: "slide"),{
+        html.elem("section",attrs: (class: "subslide"),
+                  html.frame( block(fill: it.fill,width: 800pt, height: 450pt,
+                      _add-background-foreground(it.background, it.foreground,
+                          _block-with-header-footer(inset:it.margin,header:it.header,footer:it.footer, 800pt,  450pt, it.body)) ) )  +  
+  
+                  html.elem("aside", attrs: (class: "notes"), extract-speakernote-from-content-block(it.body)  )
+                   )
+                   
+       
+          
+        
+        subslide.step()
+        set heading(outlined: false)
+
+        
+        
+        context {
+          let reps = repetitions.get().first()
+          for curr-subslide in range(2, reps + 1) {
+            later-counter.update(0)
+
+
+            html.elem("section",attrs: (class: "subslide"),
+              html.frame( block(fill: it.fill,width: 800pt, height: 450pt,
+                      _add-background-foreground(it.background, it.foreground,
+                          _block-with-header-footer(inset:it.margin,header:it.header,footer:it.footer, 800pt,  450pt, it.body)) ) )  +  
+  
+              html.elem("aside", attrs: (class: "notes"), extract-speakernote-from-content-block(it.body)  )
+            )
+
+            subslide.step()
+          }
+        }
+      }
+      )
+      
+    } else {
+      set page(fill:it.fill,margin: it.margin, background: it.background)
+      it.body
+
+      subslide.step()
+      set heading(outlined: false)
+
+      context {
+        let reps = repetitions.get().first()
+        for curr-subslide in range(2, reps + 1) {
+          later-counter.update(0)
+          pagebreak(weak: true)
+
+          pdfpc-slide-markers(curr-subslide)
+
+          it.body
+          subslide.step()
+        }
+      }
+    }
+  }
+},
+  fields: (
+    e.field("body", content, required: true),
+    e.field("fill", e.types.paint, doc: "slide fill.", default: white.transparentize(100%)),
+    e.field("class", str, doc: "class name used as selector", default: ""),
+    e.field("margin", e.types.union(relative,dictionary ), doc: "slide margins", default: 0pt),
+    e.field("background", e.types.union(none,content), default:none),
+    e.field("foreground", e.types.union(none,content), default:none),
+    e.field("header", e.types.union(none,content), default:none),
+    e.field("footer", e.types.union(none,content), default:none),
+    // TODO add background,foreground easy applicable
+    // header-ascent header, footer, footer descent these require a little more work to keep the aspect ratio consistent
+    // what do we do with align? do we need it 
+    // 
+    // after that create themes that use these both direct via c
+    // 
+    // #show: e.show_(elembicslide, it => {
+ /*        show grid.cell.where(x: 1): set text(white)
+            show grid.cell: set align(center+horizon)
+            set grid(align:center)
+            [#it]
+          })
+
+        #show: e.cond-set(elembicslide.with(class: "special"), fill: yellow) */
+
+  )
+
+)
+
+            
